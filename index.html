@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Victor Mulé — Portfolio</title>
+
+  <!-- Perf: early connection for CDN hosting p5 -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js" defer></script>
+
+  <style>
+    :root{
+      /* Palette de couleur*/
+      --bg:#12100E; --card:#1B1714; --muted:#C9B8A7; --text:#FFF7EE;
+      --accent:#FFB86B; --accent2:#FF8C6A; --ring:rgba(255,184,107,.35);
+      /* hauteur du carrousel */
+      --car-h:150px;
+    }
+
+    /* Réinitialisations de base */
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji'}
+    a{color:var(--accent2);text-decoration:none}
+    a:hover{text-decoration:underline}
+    :focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring),0 0 0 1.2px var(--accent);border-radius:12px}
+
+    /* Layout généraux */
+    .container{max-width:1100px;margin:0 auto;padding:24px;position:relative}
+    nav{position:sticky;top:0;backdrop-filter:blur(12px);background:linear-gradient(180deg,rgba(18,16,14,.9),rgba(18,16,14,.55));z-index:50;border-bottom:1px solid #2a211c}
+    .nav-inner{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 24px}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.4px}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 24px var(--ring)}
+    nav .links a{margin:0 10px;padding:8px 12px;border-radius:999px;border:1px solid #2a211c;background:#17110e}
+    nav .links a:hover{border-color:#3b2f27}
+
+    .hero{position:relative;padding:96px 24px 32px}
+    .hero h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:0 0 12px;letter-spacing:.2px}
+
+    /* Paragraphes justifiés, sans césure des mots */
+    .hero .sub,
+    .section p,
+    .section .lead,
+    .meta p,
+    .small{
+      text-align: justify;
+      text-justify: inter-word;
+      word-break: keep-all;
+      hyphens: none;
+      letter-spacing: 0;
+    }
+    .hero .sub{font-size:clamp(16px,3vw,20px);color:var(--muted);max-width:820px}
+
+    .section{padding:48px 0;position:relative}
+    .section h2{font-size:24px;letter-spacing:.3px;margin:0 0 8px}
+    .section p.lead{color:var(--muted);margin:0 0 20px}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+
+    /* Cartes */
+    .card{grid-column:span 4;background:linear-gradient(180deg,#211a15,#17110e);border:1px solid #2a211c;border-radius:20px;overflow:hidden;position:relative;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;box-shadow:0 2px 0 rgba(0,0,0,.25),inset 0 0 0 1px rgba(255,255,255,.02)}
+    .card:hover{transform:translateY(-4px);border-color:#3b2f27;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.04)}
+    .card img{display:block;width:100%;height:220px;object-fit:cover;filter:saturate(1.05) contrast(1.03)}
+    .card .meta{padding:14px 14px 16px}
+    .card .kicker{color:var(--muted);font-size:12px;letter-spacing:.3px;text-transform:uppercase}
+    .card h3{white-space:normal;word-break:normal;overflow-wrap:normal;hyphens:none}
+    .card .actions{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+
+    /* Bouton */
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:12px;border:1px solid #34281f;background:#1a140f;color:var(--text);font-size:14px}
+    .btn:hover{border-color:#4a3a2f}
+
+    /* Onglets */
+    .tabs{display:flex;gap:10px;margin:12px 0 22px;flex-wrap:wrap}
+    .tab{padding:10px 14px;border-radius:999px;border:1px solid #2a211c;background:#17110e;cursor:pointer;user-select:none;color:var(--text);transition:background .15s ease, box-shadow .15s ease, border-color .15s ease}
+    .tab:hover{border-color:#4a3a2f;background:#201813;box-shadow:0 0 0 2px rgba(255,184,107,.10) inset}
+    .tab.active{background:linear-gradient(135deg,rgba(255,184,107,.18),rgba(255,140,106,.12));border-color:#3b2f27;box-shadow:0 0 0 2px rgba(255,184,107,.12) inset}
+    .hidden{display:none!important}
+
+    /* Projets / iframes */
+    .projects .iframe-wrap{position:relative;border-radius:18px;overflow:hidden;border:1px solid #2a211c;background:#130e0b;height:300px}
+    .projects iframe{width:100%;height:100%;border:0}
+    .projects .card{grid-column:span 6}
+
+    /* Pied de page */
+    footer{padding:64px 24px;color:var(--muted);border-top:1px solid #2a211c}
+
+    /* Contact */
+    .contact-card{background:linear-gradient(180deg,#1c1511,#130e0b);border:1px solid #2a211c;border-radius:20px;padding:20px;display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+    .contact-card .col{grid-column:span 6}
+    input,textarea{width:100%;background:#140f0c;border:1px solid #34281f;color:var(--text);border-radius:12px;padding:12px 14px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    form .row{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    form .span6{grid-column:span 6}
+    form .span12{grid-column:span 12}
+    form button{margin-top:10px}
+    .small{font-size:12px;color:var(--muted)}
+    hr.sep{border:0;border-top:1px dashed #34281f;margin:24px 0}
+
+    /* Media queries */
+    @media (max-width:900px){.card{grid-column:span 6}.projects .card{grid-column:span 12}.contact-card .col{grid-column:span 12}}
+    @media (max-width:640px){.card{grid-column:span 12}}
+
+    /* spans pour l’effet (repousse par lettre) */
+    .w{display:inline-block}
+    .char{display:inline-block;will-change:transform;transition:transform .12s ease-out;white-space:pre}
+
+    /* ===== Stage : card horizontal + carrousel compact ===== */
+    .stage-card{
+      grid-column:span 12;
+      display:grid;
+      grid-template-columns:1.25fr 1fr;
+      background:linear-gradient(180deg,#211a15,#17110e);
+      border:1px solid #2a211c;border-radius:20px;overflow:hidden
+    }
+    .stage-card .text{padding:16px 18px}
+    .stage-card .kicker{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+    .stage-card h3{margin:6px 0 10px}
+    .stage-card .contact{margin-top:10px;color:var(--muted);font-size:14px}
+
+    /* Carrousel sans légende, image jusqu’en bas */
+    .carousel{position:relative;overflow:hidden;border-left:1px solid #2a211c;background:#130e0b;display:flex;flex-direction:column;height:calc(var(--car-h) + 110px)}
+    .carousel .track{display:flex;height:100%;will-change:transform;transition:transform .4s ease-in-out}
+    .carousel img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block}
+
+    /* Media bloc fixe (pour les cartes horizontales sans carrousel) */
+    .media{position:relative;overflow:hidden;border-left:1px solid #2a211c;background:#130e0b;height:calc(var(--car-h) + 110px)}
+    .media img{width:100%;height:100%;object-fit:cover;display:block}
+
+    @media (max-width:900px){
+      .stage-card{grid-template-columns:1fr}
+      .carousel,.media{border-left:0;border-top:1px solid #2a211c}
+    }
+
+    /* === Alternance image/texte pour les journées d’étude (panel #confs) === */
+    /* Par défaut : texte à gauche, image à droite */
+    #confs .stage-card{
+      grid-template-columns:1.25fr 1fr;
+      grid-template-areas: "text media";
+    }
+    #confs .stage-card .text{ grid-area:text; }
+    #confs .stage-card .media{ grid-area:media; }
+
+    /* Une carte sur deux : image à gauche, texte à droite */
+    #confs .stage-card:nth-of-type(even){
+      grid-template-columns:1fr 1.25fr;
+      grid-template-areas: "media text";
+    }
+
+    /* Sur mobile : empiler proprement (texte puis image) */
+    @media (max-width:900px){
+      #confs .stage-card{
+        grid-template-columns:1fr;
+        grid-template-areas:
+          "text"
+          "media";
+      }
+      #confs .stage-card:nth-of-type(even){
+        grid-template-columns:1fr;
+        grid-template-areas:
+          "text"
+          "media";
+      }
+    }
+
+    /* Accessibilité: réduction des animations si demandé */
+    @media (prefers-reduced-motion: reduce){
+      .char{transition:none}
+      .carousel .track{transition:none}
+      .section h2{animation:none}
+    }
+
+    /* Titres de section : bande dégradée + respiration */
+    .section h2 {
+      position: relative;
+      display: inline-block;
+      font-size: 28px;
+      letter-spacing: .5px;
+      z-index: 1;
+      animation: breathe 6s ease-in-out infinite;
+    }
+    .section h2::after {
+      content: "";
+      position: absolute;
+      left: -20vw;
+      right: -20vw;
+      bottom: -8px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      z-index: -1;
+      border-radius: 4px;
+      transform-origin: left center;
+      transform: scaleX(0);
+      transition: transform .6s cubic-bezier(.4,0,.2,1);
+    }
+    .section h2.is-visible::after { transform: scaleX(1); }
+    @keyframes breathe {
+      0%,100% { transform: scale(1); opacity: 0.9; }
+      50%     { transform: scale(1.05); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+
+  <nav>
+    <div class="nav-inner container">
+      <div class="brand">
+        <div class="dot" aria-hidden="true"></div>
+        <div>Victor Mulé — Portfolio</div>
+      </div>
+      <div class="links">
+        <a href="#restauration">Restauration-conservation</a>
+        <a href="#numerique">Numérique</a>
+        <a href="#recherche">Recherche</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero container">
+    <h1>D'encre et de pixel</h1>
+    <h2>Conservation et patrimoine à l’ère du numérique</h2>
+    <p class="sub">Étudiant en master de conservation-restauration des biens culturels à l'ESAA (Avignon), je me spécialise dans le traitement et la préservation des ouvrages littéraires, des archives et du patrimoine numérique. Bibliophile de formation et de passion, j'attache une importance particulière à la matérialité des supports tout en interrogeant les défis posés par la numérisation et l'évolution des usages documentaires. Ce portfolio présente une sélection de mes travaux de conservation-restauration ainsi que des recherches et expérimentations autour de la place du numérique dans la sauvegarde du patrimoine.</p>
+  </header>
+
+  <main class="container">
+    <section id="restauration" class="section">
+      <h2>Restauration-conservation</h2>
+      <p class="lead">Études et interventions appliquées aux objets des collections patrimoniales</p>
+
+      <div class="tabs" role="tablist" aria-label="Filtrer par section">
+        <button class="tab active" data-target="general" role="tab" aria-selected="true">Générale</button>
+        <button class="tab" data-target="avignon" role="tab" aria-selected="false">École Supérieure d’Art d’Avignon — France</button>
+        <button class="tab" data-target="cambre" role="tab" aria-selected="false">ENSAV La Cambre — Belgique</button>
+      </div>
+
+      <!-- Panel GÉNÉRALE (tout) -->
+      <div id="general" class="grid panel">
+        <!-- ESAA : Sylvie Nayral -->
+        <article class="card">
+          <img class="img" alt="Aperçu — Sylvie Nayral, Le Monde à l’envers (documents)" src="image/DNA.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ESAA Avignon · 2024–2025</div>
+            <h3>Le Monde à l’envers, Documents (1993) — Sylvie Nayral </h3>
+            <div class="actions">
+              <a class="btn" href="PDF/DNA.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">FRAC Occitanie Montpellier — œuvre-archive</span>
+            </div>
+          </div>
+        </article>
+        <!-- ESAA : Boîte de géométrie -->
+        <article class="card">
+          <img class="img" alt="Aperçu — Boîte de géométrie descriptive (A. Jullien)" src="image/Geometrie.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ESAA Avignon · 2024–2025</div>
+            <h3>Boîte de géométrie descriptive, Méthode nouvelle (1873) — A. Jullien </h3>
+            <div class="actions">
+              <a class="btn" href="PDF/GEOMETRIE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque-Musée Inguimbertine de Carpentras — Objet pédagogique</span>
+            </div>
+          </div>
+        </article>
+        <!-- Vesta -->
+        <article class="card">
+          <img alt="Aperçu du dossier VESTA — page 1" src="image/Vesta.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2019–2020</div>
+            <h3>VESTA, sive Ant-Aristarchi Vindex (1634) — Liberti Fromondi</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/VESTA.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <!-- Manuductio -->
+        <article class="card">
+          <img alt="Aperçu du dossier Manuductio ad Logicam — page 1" src="image/Manuductio.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2018–2019</div>
+            <h3>Manuductio ad Logicam sive Dialectica (1678) — R.P. Phillipe du Trieu</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/MANUDUCTIO.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <!-- États & Empires -->
+        <article class="card">
+          <img alt="Aperçu du dossier Les États, Empires, Royaumes — page 1" src="image/Etat.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2018–2019</div>
+            <h3>Les États, Empires, Royaumes, Duchés &amp; Principautés du monde (1621) — Sieur Pierre d’Avity</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/EMPIRE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <!-- Martyrologe -->
+        <article class="card">
+          <img alt="Aperçu du dossier Le Martyrologe Romain — page 1" src="image/Martyrologue.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2018–2019</div>
+            <h3>Le Martyrologe Romain (1641) — Pape Grégoire XIII</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/MARTYROLOGE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <img alt="Aperçu du dossier Anthologie des poètes belges" src="image/Anthologie.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2017–2018</div>
+            <h3>Anthologie des poètes belges (1918) — Louis Dumont-Wilden</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/ANTHOLOGIE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <img alt="Aperçu du dossier Prométhée" src="image/Promethee.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2017–2018</div>
+            <h3>Dossier Prométhée (1899) — Iwan Gilkin</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/PROMETHE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Panel AVIGNON uniquement -->
+  <div id="avignon" class="grid panel hidden">
+    <article class="card">
+      <img class="img" alt="Aperçu — Sylvie Nayral, Le Monde à l’envers (documents)" src="image/DNA.png" loading="lazy"/>
+      <div class="meta">
+        <div class="kicker">ESAA Avignon · 2024–2025</div>
+        <h3>Le Monde à l’envers, Documents (1993) — Sylvie Nayral</h3>
+        <div class="actions">
+          <a class="btn" href="PDF/DNA.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+          <span class="small">FRAC Occitanie Montpellier — œuvre-archive</span>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <img class="img" alt="Aperçu — Boîte de géométrie descriptive (A. Jullien)" src="image/Geometrie.png" loading="lazy"/>
+      <div class="meta">
+        <div class="kicker">ESAA Avignon · 2024–2025</div>
+        <h3>Boîte de géométrie descriptive, Méthode nouvelle (1873) — A. Jullien </h3>
+        <div class="actions">
+          <a class="btn" href="PDF/GEOMETRIE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+          <span class="small">Bibliothèque-Musée Inguimbertine de Carpentras — Objet pédagogique</span>
+        </div>
+      </div>
+    </article>
+  </div>
+  
+      <!-- Panel LA CAMBRE uniquement -->
+      <div id="cambre" class="grid panel hidden">
+        <article class="card">
+          <img alt="Aperçu du dossier VESTA — page 1" src="image/Vesta.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">La Cambre · 2019–2020</div>
+            <h3>VESTA, sive Ant-Aristarchi Vindex (1634) — Liberti Fromondi</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/VESTA.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <img alt="Aperçu du dossier Manuductio ad Logicam — page 1" src="image/Manuductio.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">La Cambre · 2018–2019</div>
+            <h3>Manuductio ad Logicam sive Dialectica (1678) — R.P. Phillipe du Trieu</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/MANUDUCTIO.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <img alt="Aperçu du dossier Les États, Empires, Royaumes — page 1" src="image/Etat.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">La Cambre · 2018–2019</div>
+            <h3>Les États, Empires, Royaumes, Duchés &amp; Principautés du monde (1621) — Sieur Pierre d’Avity</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/EMPIRE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <img alt="Aperçu du dossier Le Martyrologe Romain — page 1" src="image/Martyrologue.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">La Cambre · 2018–2019</div>
+            <h3>Le Martyrologe Romain (1641) — Pape Grégoire XIII</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/MARTYROLOGE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <img alt="Aperçu du dossier Anthologie des poètes belges" src="image/Anthologie.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2017–2018</div>
+            <h3>Anthologie des poètes belges (1918) — Louis Dumont-Wilden</h3>
+            <div class="actions">
+              <a class="btn" href="PDF/PROMETHE.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <img alt="Aperçu du dossier Prométhée" src="image/Promethee.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">ENSAV La Cambre · 2017–2018</div>
+            <h3>Dossier Prométhée (1899) — Iwan Gilkin</h3>
+            <div class="actions">
+              <a class="btn" href="sandbox:/mnt/data/2 - Dossier Prométhé.pdf" target="_blank" rel="noopener">Voir / Télécharger le PDF</a>
+              <span class="small">Bibliothèque de l’Université de Mons — Réserve précieuse</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+
+
+    <section id="numerique" class="section projects">
+      <h2>Numérique</h2>
+      <p class="lead">Le numérique au service de la conservation-restauration, vers un patrimoine dématérialisé et interactif</p>
+      <div class="grid">
+        <article class="card">
+          <div class="iframe-wrap"><iframe title="Géométrique — Netlify" src="https://geometrique.netlify.app/" loading="lazy" referrerpolicy="no-referrer"></iframe></div>
+          <div class="meta">
+            <div class="kicker">ESAA Avignon · 2024–2025</div>
+            <h3>Boîte de géométrie descriptive, Méthode nouvelle (1873) — A. Jullien.</h3>
+            <p class="small">Réflexion sur la manière de préserver la valeur pédagogique d’un objet qui n’est plus manipulable, mais qui servait autrefois à l’apprentissage de la géométrie.</p>
+            <div class="actions"><a class="btn" href="https://geometrique.netlify.app/" target="_blank" rel="noopener">Ouvrir le site</a></div>
+          </div>
+        </article>
+        <article class="card">
+          <div class="iframe-wrap"><iframe title="Bréguet — Netlify" src="https://breguet.netlify.app/" loading="lazy" referrerpolicy="no-referrer"></iframe></div>
+          <div class="meta">
+            <div class="kicker">ESAA Avignon · 2024–2025</div>
+            <h3>A bord du Breguet 19, le premier tour du monde en avion.</h3>
+            <p class="small">Projet de constat d’état en trois dimensions (vision Mushroom Alice), visant à annoter les déformations et déchirures présentes sur le gouvernail du Bréguet 19, premier avion à avoir réalisé un tour du monde.</p>
+            <div class="actions"><a class="btn" href="https://breguet.netlify.app/" target="_blank" rel="noopener">Ouvrir le site</a></div>
+          </div>
+        </article>
+        <article class="card">
+          <div class="iframe-wrap"><iframe title="Amazonie — Netlify" src="https://amazonie.netlify.app/" loading="lazy" referrerpolicy="no-referrer"></iframe></div>
+          <div class="meta">
+            <div class="kicker">ESAA Avignon · 2024–2025</div>
+            <h3>Projet Amazonie : restitution des collections ethnographiques.</h3>
+            <p class="small">Ce travail vise à restituer l’esprit et la mémoire des objets ethnographiques brésiliens conservés au Musée du Quai Branly, en collaboration avec les communautés autochtones de l’Amazonie.</p>
+            <div class="actions"><a class="btn" href="https://amazonie.netlify.app/" target="_blank" rel="noopener">Ouvrir le site</a></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Nouvelle section Recherche, stages & conférences -->
+    <section id="recherche" class="section">
+      <h2>Recherche, stages & conférences</h2>
+      <p class="lead">Stages, communications, journées d’étude et publications.</p>
+
+      <div class="tabs" role="tablist" aria-label="Filtrer">
+        <button class="tab active" data-target="stages" role="tab" aria-selected="true">Stages</button>
+        <button class="tab" data-target="confs" role="tab" aria-selected="false">Conférences & journées d’étude</button>
+        <button class="tab" data-target="articles" role="tab" aria-selected="false">Articles & recherches</button>
+      </div>
+
+      <!-- Panel STAGES -->
+      <div id="stages" class="grid panel">
+        <article class="stage-card">
+          <div class="text">
+            <div class="kicker">Stage · Avril 2025</div>
+            <h3>Atelier François & Marie Vinourd — Fondation Louis Jou (Les Baux-de-Provence)</h3>
+            <p>Stage en conservation-restauration livre & papier : traitements de registres et manuscrits (désacidification, gommage, comblement de lacune, doublage, montages, couture). Atelier spécialisé dans les reliures du bas et haut Moyen-age</p>
+            <p class="contact">Contact : <a href="mailto:vinourd@gmail.com">vinourd@gmail.com</a> — 04 90 54 34 39</p>
+          </div>
+          <div class="carousel" aria-label="Diaporama stage Vinourd" id="vinourd-carousel">
+            <div class="track" id="vinourd-track">
+              <img src="image/vinourd-atelier.png" alt="Atelier Vinourd — vue d’ensemble">
+              <img src="image/vinourd-stage-1.jpg" alt="Atelier Vinourd ">
+              <img src="image/vinourd-stage-2.png" alt="Atelier Vinourd ">
+              <img src="image/vinourd-stage-3.png" alt="Atelier Vinourd ">
+              <img src="image/vinourd-stage-4.png" alt="Atelier Vinourd ">
+              <img src="image/vinourd-stage-5.jpg" alt="Atelier Vinourd ">
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Panel CONFÉRENCES -->
+      <div id="confs" class="grid panel hidden">
+        <!-- NOUVELLES cartes « journée d’étude » (horizontales, sans carrousel) -->
+        <article class="stage-card">
+          <div class="text">
+            <div class="kicker">Journée d’étude · Marseille — Vendredi 13 juin 2025 · 9h–17h</div>
+            <h3>La thermographie infrarouge appliquée à la conservation des biens culturels : théorie et pratique</h3>
+            <p>Formation et démonstrations autour des applications de la thermographie infrarouge pour l’analyse et le suivi d’état des œuvres.</p> 
+            <p class="contact"><strong>CICRP</strong>, 21 rue Guibal, 13003 — Marseille.</p>
+          </div>
+          <div class="media" aria-hidden="true">
+            <img src="image/thermographie.png" alt="Thermographie infrarouge — visuel de la journée d’étude">
+          </div>
+        </article>
+
+        <article class="stage-card">
+          <div class="text">
+            <div class="kicker">Journées professionnelles · Paris — 17–18 mars 2025</div>
+            <h3>Numérique et conservation-restauration : apports, objectifs et enjeux</h3>
+            <p>Rencontres organisées par le <strong>Ministère de la Culture</strong> à l’<strong>Institut national du patrimoine</strong>, sur la thématique des usages du numérique en conservation-restauration, perspectives et retours d’expérience.</p>
+          <p class="contact"><strong>INP</strong>, Galerie Colbert 2 rue Vivienne, auditorium Jacqueline Lichtenstein — Paris.</p>
+          </div>
+          <div class="media" aria-hidden="true">
+            <img src="image/numerique.png" alt="Numérique et conservation-restauration — visuel">
+          </div>
+        </article>
+
+        <article class="stage-card">
+          <div class="text">
+            <div class="kicker">Workshop · Bruxelles — 4–7 Novembre 2019</div>
+            <h3>The aqueous environment and solvents for treatments on works of art on paper</h3>
+            <p>Préparation et application de gel solvant pour le nettoyage et le traitement des oeuvres d'art. Formation dispensé par <strong>Paolo Cremonesi</strong> (chimiste de la conservation) et <strong>Letizia Satto</strong> (restauratrice).</p>
+            <p class="contact"><strong>ENSAV La Cambre</strong>, Abbaye de la Cambre — Bruxelles.</p>
+          </div>
+          <div class="media" aria-hidden="true">
+            <img src="image/cremonesi.png" alt="Workshop Cremonesi — aqueous environment and solvents">
+          </div>
+        </article>
+
+                <article class="stage-card">
+          <div class="text">
+            <div class="kicker">Workshop · Arles — 19–24 novembre 2018</div>
+            <h3>(BLOCK)CHAIN OF LOVE - PAMAL</h3>
+            <p>Ce workshop explore le rôle de la blockchain dans la création et la conservation de l’art numérique, entre recherche, prototypes et expositions. Coordination <strong>Emmanuel Guez (PAMAL)</strong>.</p>
+            <p class="contact"><strong>Ancien Couvent Saint Césaire</strong>, Impasse de Mourgues — Arles.</p>
+          </div>
+          <div class="media" aria-hidden="true">
+            <img src="image/PAMAL.png" alt="Workshop (BLOCK)CHAIN OF LOVE - PAMAL">
+          </div>
+        </article>
+      </div>
+
+      <!-- Panel ARTICLES -->
+      <div id="articles" class="grid panel hidden">
+        <!-- Cristaux liquide -->
+        <article class="card">
+          <img alt="Exposé sur les cristaux liquides" src="image/Cristaux.png" loading="lazy"/>
+          <div class="meta">
+            <div class="kicker">FUTURE TALKS 025 · Munich — Novembre 2025</div>
+            <h3>Présentation d’un travail de recherche en cours lors de la conférence internationale Future Talks : Les cristaux liquides, un matériau de l’art contemporain — enjeux pour la conservation-restauration du patrimoine.
+            </h3>
+            <div class="actions">
+              <a class="btn" href="sandbox:/mnt/data/dossier Cristal Liquide.pdf" target="_blank" rel="noopener">Voir le PDF</a>
+              <span class="small"><strong>Die Neue Sammlung : The Design Museum</strong>, Pinakothek der Moderne — Munich.</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="contact" class="section">
+      <h2>Contact</h2>
+      <div class="contact-card">
+        <div class="col">
+          <p>Une question, une proposition, une collaboration ? Écrivez-moi :</p>
+          <p><strong>Victor Mulé</strong><br/>Étudiant en Master — ESAA Avignon<br/><a href="mailto:victor.mule@esaavignon.fr">victor.mule@esaavignon.fr</a></p>
+          <hr class="sep"/>
+          <p class="small"></p>
+        </div>
+        <div class="col">
+          <form action="mailto:victor.mule@esaavignon.fr" method="post" enctype="text/plain">
+            <div class="row">
+              <div class="span6">
+                <label for="name">Nom</label>
+                <input id="name" name="Nom" required placeholder="Votre nom"/>
+              </div>
+              <div class="span6">
+                <label for="email">Email</label>
+                <input id="email" name="Email" type="email" required placeholder="vous@exemple.fr"/>
+              </div>
+              <div class="span12">
+                <label for="msg">Message</label>
+                <textarea id="msg" name="Message" rows="4" required placeholder="Dites-moi tout…"></textarea>
+              </div>
+            </div>
+            <button class="btn" type="submit">Envoyer</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container">
+    <div>© 2025 — Victor Mulé. HTML + p5.js.</div>
+  </footer>
+
+  <script>
+    // =============================================
+    // Utilitaires DOM
+    // =============================================
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    // Ne traite pas les éléments dans .btn ou .tab
+    const EXCLUDE = el => el.closest('.btn, .tab');
+
+    // =============================================
+    // Onglets (scopés par section, avec ARIA propre)
+    // =============================================
+    (function initTabs(){
+      $$('.section').forEach(section => {
+        const tabs = $$('.tabs .tab', section);
+        const panels = $$('.panel', section);
+        if(!tabs.length || !panels.length) return;
+
+        // Mappe chaque tab à son panel, ajoute les attributs ARIA
+        tabs.forEach(tab => {
+          const id = tab.getAttribute('data-target');
+          const panel = section.querySelector('#'+CSS.escape(id));
+          if(panel){
+            const tabId = `${id}-tab`;
+            tab.id = tab.id || tabId;
+            tab.setAttribute('aria-controls', id);
+            panel.setAttribute('role', 'tabpanel');
+            panel.setAttribute('aria-labelledby', tab.id);
+          }
+        });
+
+        const selectTab = (tab) => {
+          tabs.forEach(t => {
+            t.classList.toggle('active', t===tab);
+            t.setAttribute('aria-selected', t===tab ? 'true' : 'false');
+            t.setAttribute('tabindex', t===tab ? '0' : '-1');
+          });
+          panels.forEach(p => p.classList.add('hidden'));
+          const targetId = tab.getAttribute('data-target');
+          section.querySelector('#'+CSS.escape(targetId))?.classList.remove('hidden');
+        };
+
+        // Click
+tabs.forEach(tab => tab.addEventListener('click', () => {
+  selectTab(tab);
+
+  // --- contrôle carrousel quand on change d’onglet ---
+  const targetId = tab.getAttribute('data-target');
+  if(window._vinourdCarousel){
+    if(targetId === 'stages') window._vinourdCarousel.resetAndPlay();
+    else window._vinourdCarousel.pause();
+  }
+}));
+
+// Etat initial
+const initialTab = tabs.find(t=>t.classList.contains('active')) || tabs[0];
+selectTab(initialTab);
+
+// --- contrôle carrousel à l’ouverture initiale ---
+if(window._vinourdCarousel){
+  const targetId = initialTab.getAttribute('data-target');
+  if(targetId === 'stages') window._vinourdCarousel.resetAndPlay();
+  else window._vinourdCarousel.pause();
+}
+
+        // Navigation clavier (gauche/droite, Home/End)
+        section.addEventListener('keydown', (e) => {
+          const current = document.activeElement;
+          if(!current || !current.classList?.contains('tab')) return;
+          const idx = tabs.indexOf(current);
+          let nextIdx = idx;
+          if(e.key === 'ArrowRight') nextIdx = (idx+1)%tabs.length;
+          else if(e.key === 'ArrowLeft') nextIdx = (idx-1+tabs.length)%tabs.length;
+          else if(e.key === 'Home') nextIdx = 0;
+          else if(e.key === 'End') nextIdx = tabs.length-1;
+          else return;
+          e.preventDefault();
+          tabs[nextIdx].focus(); selectTab(tabs[nextIdx]);
+        });
+
+        // Etat initial
+        selectTab(tabs.find(t=>t.classList.contains('active')) || tabs[0]);
+      });
+    })();
+
+    // =============================================
+    // Wrapping des caractères/mots pour l'effet
+    // =============================================
+    const ONLY_WS  = /^[\s\u00A0]+$/;
+    const SPLIT_WS = /([\s\u00A0]+)/;
+    const CHAR_SELECTORS = 'h1, h2, nav .links a, .kicker';
+    const WORD_BLOCKS    = '.hero .sub, section p, .lead, .meta p, .contact-card p, .card h3';
+
+    function unwrapAll(root, selector){
+      $$(selector, root).forEach(el => { el.replaceWith(document.createTextNode(el.textContent)); });
+    }
+
+    function wrapCharsIn(root){
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode:n => {
+          if(!n.nodeValue || ONLY_WS.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+          const p = n.parentElement; if(!p || EXCLUDE(p)) return NodeFilter.FILTER_REJECT;
+          if(p.matches?.(CHAR_SELECTORS) || p.closest?.(CHAR_SELECTORS)) return NodeFilter.FILTER_ACCEPT;
+          return NodeFilter.FILTER_REJECT;
+        }
+      });
+      const items=[]; while(walker.nextNode()) items.push(walker.currentNode);
+      for(const textNode of items){
+        const frag=document.createDocumentFragment();
+        for(const ch of textNode.nodeValue){
+          const s=document.createElement('span'); s.className='char'; s.textContent=ch;
+          frag.appendChild(s);
+        }
+        textNode.parentNode.replaceChild(frag, textNode);
+      }
+    }
+
+    function wrapWordsAndChars(){
+      $$(WORD_BLOCKS).forEach(block=>{
+        unwrapAll(block, 'span.char'); unwrapAll(block, 'span.w');
+        const walker=document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
+          acceptNode:n => (n.nodeValue && !ONLY_WS.test(n.nodeValue)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+        });
+        const texts=[]; while(walker.nextNode()) texts.push(walker.currentNode);
+        for(const textNode of texts){
+          const parts=textNode.nodeValue.split(SPLIT_WS);
+          const frag=document.createDocumentFragment();
+          for(const tok of parts){
+            if(!tok) continue;
+            if(ONLY_WS.test(tok)){ frag.appendChild(document.createTextNode(tok)); }
+            else{
+              const w=document.createElement('span'); w.className='w';
+              for(const ch of tok){ const c=document.createElement('span'); c.className='char'; c.textContent=ch; w.appendChild(c); }
+              frag.appendChild(w);
+            }
+          }
+          textNode.parentNode.replaceChild(frag, textNode);
+        }
+      });
+    }
+
+    wrapCharsIn(document.body);
+    wrapWordsAndChars();
+
+    // =============================================
+    // Tri des cartes "Générale" (récents → anciens)
+    // =============================================
+    function extractYear(card){
+      const k = card.querySelector('.kicker');
+      if(!k) return -Infinity;
+      const m = k.textContent.match(/(19|20)\d{2}(?:\s*[\u2013-]\s*(19|20)\d{2})?/);
+      if(!m) return -Infinity;
+      return m[2] ? parseInt(m[2],10) : parseInt(m[0],10);
+    }
+
+    (function sortGeneralByRecent(){
+      const panel = document.querySelector('#general.panel');
+      if(!panel) return;
+      const cards = Array.from(panel.querySelectorAll('.card'));
+      cards.sort((a,b)=> extractYear(b) - extractYear(a));
+      cards.forEach(c=> panel.appendChild(c));
+    })();
+
+    // =============================================
+    // Effet de repousse (optimisé)
+    // =============================================
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let CHAR_CACHE = []; // {el, cx, cy}
+
+    function rebuildCharCache(){
+      const all = $$('.char');
+      CHAR_CACHE = all.map(el => {
+        const r = el.getBoundingClientRect();
+        return { el, cx: r.left + r.width/2, cy: r.top + r.height/2 };
+      });
+    }
+
+    // Rebuild au chargement, au resize et au scroll
+    let cacheTicking = false;
+    const scheduleRebuild = () => { if(cacheTicking) return; cacheTicking = true; requestAnimationFrame(()=>{ rebuildCharCache(); cacheTicking=false; }); };
+    window.addEventListener('resize', scheduleRebuild, {passive:true});
+    window.addEventListener('scroll', scheduleRebuild, {passive:true});
+    rebuildCharCache();
+
+    let pointerX=0, pointerY=0, animTick=false; const R=90;
+    function animate(){
+      animTick=false;
+      if(prefersReduced) return;
+      for(const {el,cx,cy} of CHAR_CACHE){
+        const dx = pointerX - cx, dy = pointerY - cy;
+        const d = Math.hypot(dx,dy) || 1;
+        const isBig = !!el.closest('h1, h2');
+        const amp = isBig ? 18 : 10;
+        if(d < R){
+          const k = (1 - d/R) * amp;
+          el.style.transform = `translate(${-(dx/d)*k}px, ${-(dy/d)*k}px)`;
+        }else{
+          el.style.transform = 'translate(0,0)';
+        }
+      }
+    }
+
+    // Bande colorée sous les h2 au scroll
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting) entry.target.classList.add('is-visible');
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.section h2').forEach(h2 => observer.observe(h2));
+
+    // Pointer (souris + tactile + stylet)
+    document.addEventListener('pointermove', (e)=>{
+      pointerX = e.clientX; pointerY = e.clientY;
+      if(!animTick){ animTick=true; requestAnimationFrame(animate); }
+    }, {passive:true});
+
+    // =============================================
+    // Carrousel auto (boucle, pause au survol/onglet inactif)
+    // =============================================
+    (function initCarousel(){
+  const root  = document.getElementById('vinourd-carousel');
+  const track = document.getElementById('vinourd-track');
+  if(!root || !track) return;
+
+  // Clone du premier slide pour boucle douce
+  const firstClone = track.children[0]?.cloneNode(true);
+  if(firstClone) track.appendChild(firstClone);
+
+  const total = track.children.length; // inclut le clone
+  let i = 0;
+  const DURATION = 2600; // ms
+  let timer = null;
+
+  const go = (n) => {
+    i = n;
+    track.style.transition = 'transform .6s ease-in-out';
+    track.style.transform  = `translateX(${-100*i}%)`;
+  };
+
+  const pause = () => { if(timer){ clearInterval(timer); timer = null; } };
+  const play  = () => { if(!timer) timer = setInterval(()=> go(i+1), DURATION); };
+
+  const resetAndPlay = () => {
+    pause();
+    i = 0;
+    // reset au début, sans animation
+    track.style.transition = 'none';
+    track.style.transform  = 'translateX(0)';
+    // forcer le reflow pour réactiver la transition ensuite
+    void track.offsetWidth;
+    track.style.transition = 'transform .6s ease-in-out';
+    play();
+  };
+
+  track.addEventListener('transitionend', () => {
+    // si on est sur le clone, revenir instantanément au vrai premier
+    if(i === total - 1){
+      track.style.transition = 'none';
+      track.style.transform  = 'translateX(0)';
+      i = 0;
+      void track.offsetWidth;
+      track.style.transition = 'transform .6s ease-in-out';
+    }
+  });
+
+  // Survol : pause / reprise
+  root.addEventListener('mouseenter', pause);
+  root.addEventListener('mouseleave', play);
+
+  // Onglet du navigateur : pause si caché
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) pause(); else play();
+  });
+
+  // Clavier (optionnel)
+  root.tabIndex = 0; // focusable
+  root.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowRight'){ pause(); go(i+1); }
+    else if(e.key === 'ArrowLeft'){ pause(); go(Math.max(0, i-1)); }
+  });
+
+  // Démarrage
+  play();
+
+  // Expose un petit contrôleur pour l’onglet
+  window._vinourdCarousel = { pause, play, resetAndPlay };
+})();
+  </script>
+</body>
+</html>
